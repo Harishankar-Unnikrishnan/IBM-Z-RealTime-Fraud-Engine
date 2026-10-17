@@ -32,5 +32,9 @@ gcc -O3 engine.c -o engine -lm
 python3 server.py &
 ./engine
 ```
-Author: Harishankar Unnikrishnan
-GitHub: https://github.com/Harishankar-Unnikrishnan
+## Team: Z MAVERICKS
+- Harishankar Unnikrishnan [GitHub(https://github.com/Harishankar-Unnikrishnan)]
+- Ansh Pandey
+- Abdul Rehman
+- Arnab Kumar Sinha
+- Harsh Shrinikesh
