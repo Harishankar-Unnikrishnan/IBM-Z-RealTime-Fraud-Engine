@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>IBM Z LinuxONE - AI Fraud Dashboard</title>
+    <style>
+        body { font-family: 'Segoe UI', Arial, sans-serif; background: #0b0f19; color: #e2e8f0; margin: 0; padding: 25px; }
+        .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #1e293b; padding-bottom: 20px; }
+        h1 { color: #38bdf8; margin: 0; font-size: 22px; }
+        .ai-badge { background: #6366f1; color: white; padding: 6px 14px; border-radius: 20px; font-size: 13px; font-weight: bold; }
+        .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin: 25px 0; }
+        .card { background: #131b2e; border: 1px solid #1e293b; border-radius: 10px; padding: 18px; text-align: center; }
+        .card h3 { margin: 0; font-size: 13px; color: #94a3b8; text-transform: uppercase; }
+        .card p { margin: 10px 0 0; font-size: 28px; font-weight: bold; }
+        table { width: 100%; border-collapse: collapse; background: #131b2e; border-radius: 10px; overflow: hidden; border: 1px solid #1e293b; }
+        th, td { padding: 12px 16px; text-align: left; border-bottom: 1px solid #1e293b; font-size: 14px; }
+        th { background: #1e293b; color: #94a3b8; font-size: 12px; }
+        .APPROVE { color: #34d399; font-weight: bold; }
+        .REVIEW { color: #fbbf24; font-weight: bold; }
+        .DECLINE { color: #f87171; font-weight: bold; }
+        .prob-bar { background: #334155; border-radius: 4px; height: 8px; width: 80px; display: inline-block; margin-right: 8px; vertical-align: middle; }
+        .prob-fill { height: 100%; border-radius: 4px; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>AI-Driven Payment Fraud & Decisioning Engine (IBM LinuxONE s390x)</h1>
+        <span class="ai-badge">EMBEDDED AI INFERENCE ACTIVE</span>
+    </div>
+    <div class="stats">
+        <div class="card"><h3>Total Ingested</h3><p id="total">0</p></div>
+        <div class="card"><h3>AI Approved</h3><p id="approved" style="color: #34d399;">0</p></div>
+        <div class="card"><h3>Step-Up Review</h3><p id="review" style="color: #fbbf24;">0</p></div>
+        <div class="card"><h3>AI Blocked Fraud</h3><p id="declined" style="color: #f87171;">0</p></div>
+    </div>
+    <table>
+        <thead>
+            <tr>
+                <th>Time</th><th>Txn ID</th><th>User ID</th><th>Amount (₹)</th>
+                <th>AI Fraud Probability</th><th>Decision</th><th>Inference Signal</th><th>Latency</th>
+            </tr>
+        </thead>
+        <tbody id="table-body">
+            <tr><td colspan="8" style="text-align: center;">Waiting for live transactions from IBM Z engine...</td></tr>
+        </tbody>
+    </table>
+    <script>
+        async function updateUI() {
+            try {
+                const res = await fetch('/api/transactions');
+                const data = await res.json();
+                if (!data || data.length === 0) return;
+                let app = 0, rev = 0, dec = 0;
+                let html = '';
+                data.slice().reverse().forEach(t => {
+                    if (t.DECISION === 'APPROVE') app++;
+                    else if (t.DECISION === 'REVIEW') rev++;
+                    else if (t.DECISION === 'DECLINE') dec++;
+                    const prob = (parseFloat(t.AI_PROB) * 100).toFixed(1);
+                    const color = t.DECISION === 'DECLINE' ? '#f87171' : (t.DECISION === 'REVIEW' ? '#fbbf24' : '#34d399');
+                    html += `<tr>
+                        <td>${t.TIMESTAMP}</td><td><strong>${t.TXN_ID}</strong></td><td>${t.USER_ID}</td>
+                        <td>₹${parseFloat(t.AMOUNT).toFixed(2)}</td>
+                        <td><div class="prob-bar"><div class="prob-fill" style="width: ${prob}%; background: ${color};"></div></div>${prob}%</td>
+                        <td class="${t.DECISION}">${t.DECISION}</td><td>${t.MODEL_SIGNAL}</td><td>${t.LATENCY_US} µs</td>
+                    </tr>`;
+                });
+                document.getElementById('table-body').innerHTML = html;
+                document.getElementById('total').innerText = data.length;
+                document.getElementById('approved').innerText = app;
+                document.getElementById('review').innerText = rev;
+                document.getElementById('declined').innerText = dec;
+            } catch (err) {}
+        }
+        setInterval(updateUI, 1500);
+        updateUI();
+    </script>
+</body>
+</html>
